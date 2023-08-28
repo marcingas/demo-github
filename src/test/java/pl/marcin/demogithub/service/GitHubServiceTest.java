@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class GitHubServiceTest {
     private MockWebServer mockWebServer;
     private GitHubService gitHubService;
+    private Integer page =2;
+    private String token = "abcd";
 
     @BeforeEach
     public void setUp() throws Exception {
@@ -56,10 +58,10 @@ class GitHubServiceTest {
                 .setBody(new ObjectMapper().writeValueAsString(repoList)));
 
         //when
-        Flux<RepoBranchCommit> branchesFlux = gitHubService.getRepositories(owner);
+        Flux<RepoBranchCommit> branchesFlux = gitHubService.getRepositories(owner,token,page);
         //then
         StepVerifier.create(branchesFlux)
-                .expectNextCount(2)
+                .expectNextCount(1)
                 .verifyComplete();
     }
     @Test
@@ -75,7 +77,7 @@ class GitHubServiceTest {
                 .setBody(new ObjectMapper().writeValueAsString(repoList)));
 
         //when
-        Flux<RepoBranchCommit> branchesFlux = gitHubService.getRepositories(owner);
+        Flux<RepoBranchCommit> branchesFlux = gitHubService.getRepositories(owner,token,page);
         //then
         StepVerifier.create(branchesFlux)
                 .expectErrorMatches(throwable -> throwable instanceof CustomNotFoundUserException)

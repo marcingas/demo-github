@@ -27,42 +27,16 @@ public class GitHubService {
         this.webClient = webClient;
     }
 
-    public Flux<Branch> getBranches(String owner) {
-        return getBranchesNameUri(owner, "project")
-                .flatMapMany(uri -> webClient.get()
-                        .uri(uri)
-                        .header("Authorization", "Bearer " + GITHUB_TOKEN)
-                        .header("Accept", "application/json")
-                        .retrieve()
-                        .bodyToFlux(Branch.class)
-                        .onErrorResume(throwable -> {
-                            if (throwable instanceof WebClientResponseException) {
-                                WebClientResponseException ex = (WebClientResponseException) throwable;
-                                if (ex.getStatusCode().value() == 404) {
-                                    String message = ex.getMessage();
-                                    return Flux.error(new CustomNotFoundUserException(HttpStatus.NOT_FOUND.value(), message));
-                                } else if (ex.getStatusCode().value() == 406) {
-                                    String message = ex.getMessage();
-                                    return Flux.error(new CustomNotAcceptableHeader(HttpStatus.NOT_ACCEPTABLE.value(), message));
-                                } else {
-                                    return Flux.error(throwable);
-                                }
-                            }
-                            return Flux.error(throwable);
-                        })
-                );
-    }
-
-    public Flux<RepoBranchCommit> getRepositories(String owner) {
+    public Flux<RepoBranchCommit> getRepositories(String owner,String token, Integer page) {
         String uriRepoList = UriComponentsBuilder.fromHttpUrl(GITHUB_API_URL)
                 .pathSegment("users", owner, "repos")
-                .queryParam("page", 12)
+                .queryParam("page", page)
                 .queryParam("per_page", 2)
                 .toUriString();
 
         return webClient.get()
                 .uri(uriRepoList)
-                .header("Authorization", "Bearer " + GITHUB_TOKEN)
+                .header("Authorization", "Bearer " + token)
                 .header("Accept", "application/json")
                 .retrieve()
                 .bodyToFlux(MyRepository.class)
@@ -88,7 +62,7 @@ public class GitHubService {
                                     .uri(uri)
                                     .retrieve()
                                     .bodyToFlux(Branch.class))
-                            .flatMapSequential(branch -> {
+                            .flatMap(branch -> {
                                 return Flux.just(new RepoBranchCommit(repository.name(),
                                         repository.owner().login(), branch.name(), branch.commit().sha()));
                             });
