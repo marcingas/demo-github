@@ -19,7 +19,6 @@ public class GitHubService {
 
     private WebClient webClient;
     private final String GITHUB_API_URL = "https://api.github.com";
-    private final String GITHUB_TOKEN = "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";
 
 
     @Autowired
@@ -27,19 +26,20 @@ public class GitHubService {
         this.webClient = webClient;
     }
 
-    public Flux<RepoBranchCommit> getRepositories(String owner,String token, Integer page) {
-        String uriRepoList = UriComponentsBuilder.fromHttpUrl(GITHUB_API_URL)
+    public Flux<RepoBranchCommit> getRepositories(String owner, String token, Integer page,Integer perPage, String baseUrl) {
+        String uriRepoList = UriComponentsBuilder.fromHttpUrl(baseUrl)
                 .pathSegment("users", owner, "repos")
                 .queryParam("page", page)
-                .queryParam("per_page", 2)
+                .queryParam("per_page", perPage)
                 .toUriString();
 
-        return webClient.get()
+        Flux<MyRepository> myRepositoryFlux = webClient.get()
                 .uri(uriRepoList)
                 .header("Authorization", "Bearer " + token)
                 .header("Accept", "application/json")
                 .retrieve()
                 .bodyToFlux(MyRepository.class)
+                .filter(repository -> !repository.fork())
                 .onErrorResume(throwable -> {
                     if (throwable instanceof WebClientResponseException) {
                         WebClientResponseException ex = (WebClientResponseException) throwable;
@@ -54,24 +54,28 @@ public class GitHubService {
                         }
                     }
                     return Flux.error(throwable);
-                })
-                .filter(repository -> !repository.fork())
-                .flatMap(repository -> {
-                    return getBranchesNameUri(owner, repository.name())
-                            .flatMapMany(uri -> webClient.get()
+                });
+
+
+        Flux<String> myBranchesUriFlux = myRepositoryFlux.flatMap(repository -> {
+            return Mono.just(UriComponentsBuilder.fromHttpUrl(GITHUB_API_URL)
+                    .pathSegment("repos", owner, repository.name(), "branches")
+                    .toUriString());
+        });
+
+        Flux<RepoBranchCommit> repoBranchCommitFlux = myRepositoryFlux
+                .flatMap(myRepository -> {
+                    return myBranchesUriFlux.flatMap(uri -> webClient.get()
                                     .uri(uri)
+                                    .header("Authorization", "Bearer " + token)
+                                    .header("Accept", "application/json")
                                     .retrieve()
                                     .bodyToFlux(Branch.class))
                             .flatMap(branch -> {
-                                return Flux.just(new RepoBranchCommit(repository.name(),
-                                        repository.owner().login(), branch.name(), branch.commit().sha()));
+                                return Flux.just(new RepoBranchCommit(myRepository.name(),
+                                        myRepository.owner().login(), branch.name(), branch.commit().sha()));
                             });
                 });
-    }
-
-    private Mono<String> getBranchesNameUri(String owner, String repoName) {
-        return Mono.just(UriComponentsBuilder.fromHttpUrl(GITHUB_API_URL)
-                .pathSegment("repos", owner, repoName, "branches")
-                .toUriString());
+        return repoBranchCommitFlux;
     }
 }
