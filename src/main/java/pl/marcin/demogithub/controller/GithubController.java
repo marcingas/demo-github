@@ -1,6 +1,5 @@
 package pl.marcin.demogithub.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,16 +13,14 @@ import reactor.core.publisher.Flux;
 @RestController
 @RequestMapping("/git")
 public class GithubController {
-    @Autowired
-    private GitHubService gitHubService;
+    private final GitHubService gitHubService;
+
     private final String GITHUB_API_URL = "https://api.github.com";
 
-    /**
-     *get answers
-     * method sets path variable param and fetches answers
-     * in a reactive manner
-     * @return returns ResponseEntity
-     */
+    public GithubController(GitHubService gitHubService) {
+        this.gitHubService = gitHubService;
+    }
+
     @GetMapping("/{owner}/{page}/{perPage}/{token}")
     public ResponseEntity<Flux<RepoBranchCommit>> getAnswers(@PathVariable String owner,
                                                              @PathVariable Integer page,
@@ -38,13 +35,6 @@ public class GithubController {
                 .body(repositories);
     }
 
-    /**
-     *
-     * @param ex- exception from service layer which warns
-     *         that there is no such user
-     * @return ResponseEntity with code value and message
-     */
-
     @ExceptionHandler(CustomNotFoundUserException.class)
     public ResponseEntity<ErrorResponse> handleNotFoundUserException(CustomNotFoundUserException ex) {
         ErrorResponse errorResponse = new ErrorResponse(ex.getValue(), ex.getMessage());
@@ -52,12 +42,6 @@ public class GithubController {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(errorResponse);
     }
-
-    /**
-     *
-     * not Acceptable Header handler
-     * @return returns code and message if header is not JSON
-     */
 
     @ExceptionHandler(CustomNotAcceptableHeaderException.class)
     public ResponseEntity<ErrorResponse> handleNotAcceptableHeaderException(CustomNotAcceptableHeaderException ex) {
