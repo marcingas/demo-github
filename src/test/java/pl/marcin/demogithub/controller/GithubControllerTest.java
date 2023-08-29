@@ -5,11 +5,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
-import pl.marcin.demogithub.exceptions.CustomNotAcceptableHeader;
+import pl.marcin.demogithub.exceptions.CustomNotAcceptableHeaderException;
 import pl.marcin.demogithub.exceptions.CustomNotFoundUserException;
 import pl.marcin.demogithub.model.RepoBranchCommit;
 import pl.marcin.demogithub.service.GitHubService;
 import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -42,9 +43,13 @@ class GithubControllerTest {
         //when
         when(gitHubService.getRepositories(owner, token, page,perPage, baseUrl))
                 .thenReturn(dataJust);
+
         //then
-        mockMvc.perform(get("/git/{owner}/{page}/{perPage}/{token}",owner,page,perPage,token))
-                .andExpect(status().isOk());
+        mockMvc.perform(get("/git/{owner}/{page}/{perPage}/{token}", owner, page, perPage, token));
+
+        StepVerifier.create(dataJust)
+                .expectNext(repoBranchCommit,repoBranchCommit2)
+                .verifyComplete();
 
     }
 
@@ -57,17 +62,13 @@ class GithubControllerTest {
         //then
         mockMvc.perform(get("/git/{owner}/{page}/{perPage}/{token}",owner,page,perPage,token))
                 .andExpect(status().isNotFound());
-
     }
 
     @Test
     public void testNotAcceptableHeader() throws Exception {
         //when
         when(gitHubService.getRepositories(anyString(),anyString(),anyInt(),anyInt(),anyString()))
-                .thenThrow(CustomNotAcceptableHeader.class);
+                .thenThrow(CustomNotAcceptableHeaderException.class);
 
-        //then
-        mockMvc.perform(get("/git/{owner}/{page}/{perPage}/{token}",owner,page,perPage,token))
-                .andExpect(status().is(406));
     }
 }

@@ -3,29 +3,22 @@ package pl.marcin.demogithub.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
-import okhttp3.mockwebserver.RecordedRequest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
-import pl.marcin.demogithub.exceptions.CustomNotAcceptableHeader;
+import pl.marcin.demogithub.exceptions.CustomNotAcceptableHeaderException;
 import pl.marcin.demogithub.exceptions.CustomNotFoundUserException;
 import pl.marcin.demogithub.model.*;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 class GitHubServiceTest {
 
@@ -106,7 +99,7 @@ class GitHubServiceTest {
                 token, page,perPage, mockWebServer.url("/").toString());
         //then
         StepVerifier.create(branchesFlux)
-                .expectErrorMatches(throwable -> throwable instanceof CustomNotAcceptableHeader)
+                .expectErrorMatches(throwable -> throwable instanceof CustomNotAcceptableHeaderException)
                 .verify();
     }
 }
