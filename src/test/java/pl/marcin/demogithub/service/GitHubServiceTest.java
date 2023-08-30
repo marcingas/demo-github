@@ -11,14 +11,13 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.marcin.demogithub.exceptions.CustomNotAcceptableHeaderException;
 import pl.marcin.demogithub.exceptions.CustomNotFoundUserException;
-import pl.marcin.demogithub.model.*;
+import pl.marcin.demogithub.model.RepoBranchCommit;
+import pl.marcin.demogithub.model.RepoWithBranches;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.mockito.ArgumentMatchers.any;
 
 class GitHubServiceTest {
 
@@ -74,8 +73,8 @@ class GitHubServiceTest {
                 .setBody(new ObjectMapper().writeValueAsString(repoList)));
 
         //when
-        Flux<RepoBranchCommit> branchesFlux = gitHubService.getRepositories(owner,
-                token, page,perPage, mockWebServer.url("/").toString());
+        Flux<RepoWithBranches> branchesFlux = gitHubService.getRepositories(owner,
+                token, page, perPage, mockWebServer.url("/").toString());
         //then
         StepVerifier.create(branchesFlux)
                 .expectErrorMatches(throwable -> throwable instanceof CustomNotFoundUserException)
@@ -95,8 +94,8 @@ class GitHubServiceTest {
                 .setBody(new ObjectMapper().writeValueAsString(repoList)));
 
         //when
-        Flux<RepoBranchCommit> branchesFlux = gitHubService.getRepositories(owner,
-                token, page,perPage, mockWebServer.url("/").toString());
+        Flux<RepoWithBranches> branchesFlux = gitHubService.getRepositories(owner,
+                token, page, perPage, mockWebServer.url("/").toString());
         //then
         StepVerifier.create(branchesFlux)
                 .expectErrorMatches(throwable -> throwable instanceof CustomNotAcceptableHeaderException)

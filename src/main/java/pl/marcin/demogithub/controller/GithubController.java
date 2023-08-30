@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import pl.marcin.demogithub.exceptions.CustomNotAcceptableHeaderException;
 import pl.marcin.demogithub.exceptions.CustomNotFoundUserException;
 import pl.marcin.demogithub.exceptions.ErrorResponse;
-import pl.marcin.demogithub.model.RepoBranchCommit;
+import pl.marcin.demogithub.model.RepoWithBranches;
 import pl.marcin.demogithub.service.GitHubService;
 import reactor.core.publisher.Flux;
 
@@ -21,14 +21,10 @@ public class GithubController {
         this.gitHubService = gitHubService;
     }
 
-    @GetMapping("/{owner}/{page}/{perPage}/{token}")
-    public ResponseEntity<Flux<RepoBranchCommit>> getAnswers(@PathVariable String owner,
-                                                             @PathVariable Integer page,
-                                                             @PathVariable Integer perPage,
+    @GetMapping("/{owner}/{token}")
+    public ResponseEntity<Flux<RepoWithBranches>> getAnswers(@PathVariable String owner,
                                                              @PathVariable String token) {
-        Flux<RepoBranchCommit> repositories = gitHubService.getRepositories(owner, token,
-                page,
-                perPage,
+        Flux<RepoWithBranches> repositories = gitHubService.getRepositories(owner, token,
                 GITHUB_API_URL);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
